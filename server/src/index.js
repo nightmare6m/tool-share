@@ -3,16 +3,9 @@ const { unusedFragMessage } = require('graphql/validation/rules/NoUnusedFragment
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
-const Auth = require('./firebase/auth');
 
-const myTools = [
-    {
-        id: "123",
-        description: "Hammer Drill",
-        category: "123",
-        quantity: 1
-    }
-]
+const Auth = require('./firebase/auth');
+const Firestore = require('./firebase/firestore');
 
 
 
@@ -59,39 +52,77 @@ const typeDefs = `
 const resolvers = {
   Query: {
     myTools: async (parent, args, context) => {
-      console.log(context.currentUser)
-      return myTools;
+      if(!context.currentUser){
+        return [];
+      }
+      const myToolsDoc = await Firestore.getDocument(context.currentUser.user_id);
+      return myToolsDoc?myToolsDoc.tools:[];
     }
   },
   Mutation:{
-    createTool: (parent, args) => {
+    createTool: async (parent, args, context) => {
+        if(!context.currentUser){
+          return {
+            errorCode: 401,
+            message: "User Not Logged In"
+          };
+        }
         const newTool = {
-            id: "12-" + myTools.length.toString(),
+            id: uuidv4(),
             description: args.description,
             category: args.category,
             quantity: args.quantity
         }
-        myTools.push(newTool);
+        
+        const myToolsDoc = await Firestore.getDocument(context.currentUser.user_id); 
+        if(!myToolsDoc){
+          await Firestore.setDocument(context.currentUser.user_id, {tools:[newTool]});
+        }
+        else{
+          await Firestore.setDocument(context.currentUser.user_id, {tools:myToolsDoc.tools.concat([newTool])});
+        }
         return {
             tool: newTool,
             errorCode: null,
             message: "Tool Created"
         };
     },
-    updateTool: (parent, args) => {
+    updateTool: async (parent, args, context) => {
+      if(!context.currentUser){
+        return {
+          errorCode: 401,
+          message: "User Not Logged In"
+        };
+      }
+
+      const myToolsDoc = await Firestore.getDocument(context.currentUser.user_id);
+      const myTools = myToolsDoc.tools; 
       const newTool = myTools.find(tool => tool.id === args.id);
       newTool.description=args.description;
       newTool.category=args.category;
       newTool.quantity=args.quantity;
+
+      await Firestore.setDocument(context.currentUser.user_id, {tools:myTools});
+
       return {
           tool: newTool,
           errorCode: null,
           message: "Tool Updated"
       };
     },
-    deleteTool: (parent, args) => {
+    deleteTool: async (parent, args, context) => {
+      if(!context.currentUser){
+        return {
+          errorCode: 401,
+          message: "User Not Logged In"
+        };
+      }
+
+      const myToolsDoc = await Firestore.getDocument(context.currentUser.user_id);
+      const myTools = myToolsDoc.tools; 
       const newTool = myTools.find(tool => tool.id === args.id);
       myTools.splice(myTools.indexOf(newTool), 1);
+      await Firestore.setDocument(context.currentUser.user_id, {tools:myTools});
       return {
           tool: newTool,
           errorCode: null,

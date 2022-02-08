@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/firestore": "^5.0.2",
     "apollo-server": "^2.25.3",
     "dotenv": "^16.0.0",
     "firebase": "^7.15.5",
