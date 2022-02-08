@@ -3,6 +3,8 @@ const { unusedFragMessage } = require('graphql/validation/rules/NoUnusedFragment
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
+const Auth = require('./firebase/auth');
+
 const myTools = [
     {
         id: "123",
@@ -11,9 +13,7 @@ const myTools = [
         quantity: 1
     }
 ]
-const users = [
 
-];
 
 
 const typeDefs = `
@@ -25,8 +25,8 @@ const typeDefs = `
       createTool(description: String!, category: ID!, quantity: Int!): ToolMutationResponse!
       updateTool(id:ID!, description: String!, category: ID!, quantity: Int!): ToolMutationResponse!
       deleteTool(id: ID!): ToolMutationResponse!
-      signup(email: String!, password: String!, name: String!): AuthResponse
-      login(email: String!, password: String!): AuthResponse
+      signup(email: String!, password: String!, name: String!): SignUpResponse
+      login(email: String!, password: String!): LoginResponse
   }
 
   type Tool {
@@ -42,15 +42,15 @@ const typeDefs = `
       errorCode: Int
   }
 
-  type AuthResponse {
-    token: String
-    user: User
+  type SignUpResponse {
+    message: String!
+    errorCode: Int
   }
-  
-  type User {
-    id: ID!
-    name: String!
-    email: String!
+  type LoginResponse {
+    token: String
+    name: String
+    message: String!
+    errorCode: Int
   }
 
 `
@@ -58,7 +58,8 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    myTools: (parent, args, context) => {
+    myTools: async (parent, args, context) => {
+      console.log(context.currentUser)
       return myTools;
     }
   },
@@ -97,33 +98,19 @@ const resolvers = {
           message: "Tool Deleted"
       };
     },
-    signup: (parent, args, context, info) => {
-      const user = {
-        id: users.length + 1,
-        name: args.name,
-        email: args.email
-      }
-      users.push({...user, ...{
-        password: args.password
-      }})
+    signup: async (parent, args, context, info) => {
+      await Auth.createUser(args);
       return {
-        token:uuidv4(),
-        user
+        message: "User Created"
       }
     },
-    login: (parent, args, context, info) => {
-      const user = users.find(u => u.email === args.email);
-      if (!user) {
-        throw new Error('No such user found')
-      }
-      const valid = user.password == args.password;
-      if (!valid) {
-        throw new Error('Invalid password')
-      }
+    login: async (parent, args, context, info) => {
+      const user = await Auth.signIn(args.email, args.password);
   
       return {
-        token:uuidv4(),
-        user
+        token:  user.token,
+        name: user.name,
+        message: "Login Successful"
       }
     }
   },
@@ -135,35 +122,29 @@ const resolvers = {
   }
 }
 
-function getUserId(req) {
-  console.log("1")
-  if (req) {
-    console.log("2")
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      console.log("3")
-      const token = authHeader.replace('Bearer ', '');
-      if (!token) {
-        throw new Error('No token found');
-      }
-      return token;
-    }
-    else{
-      console.log("4")
-      throw new Error('No auth header');
-    }
-  } 
-
-  throw new Error('Not authenticated');
-}
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => {
+  context: async ({ req }) => {
+    const authHeader = req.headers.authorization;
+    if(!authHeader){
+      return {};
+    }
+    const accessToken = authHeader.split("Bearer ")[1];
+    if(!accessToken){
+      return {};
+    }
+    try{
+      const currentUser = await Auth.validateToken(accessToken);
     return {
-      accessToken: req.headers.authorization
+      currentUser
     };
+    }
+    catch(e){
+      return {};
+    }
+    
   }
 })
 
