@@ -45,8 +45,8 @@ async function createUser(user){
     return decoded;
   }
   async function getUser(email){
-    const x =await admin.auth().getUserByEmail(email);
-    return x;
+    const user =await admin.auth().getUserByEmail(email);
+    return user;
   }
   module.exports = {
       getUser,
