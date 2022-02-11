@@ -29,7 +29,7 @@ const resolvers = {
     },
     Mutation:{
       createTool: getAuthedResolver(async (parent, args, context) => {
-          const tool = await ToolService.createTool(context.currentUser.user_id, args.description, args.category, args.quantity);
+          const tool = await ToolService.createTool(context.currentUser.user_id, args.input.description, args.input.category, args.input.quantity);
           return {
               tool,
               errorCode: null,
@@ -37,7 +37,7 @@ const resolvers = {
           };
       }),
       updateTool: getAuthedResolver(async (parent, args, context) => {
-        const tool = await ToolService.updateTool(context.currentUser.user_id, args.id, args.description, args.category, args.quantity);
+        const tool = await ToolService.updateTool(context.currentUser.user_id, args.input.id, args.input.description, args.input.category, args.input.quantity);
     
         return {
             tool,
@@ -53,13 +53,13 @@ const resolvers = {
         };
       }),
       signup: async (parent, args, context, info) => {
-        await Auth.createUser(args);
+        await Auth.createUser(args.input);
         return {
           message: "User Created"
         }
       },
       login: async (parent, args, context, info) => {
-        const user = await Auth.signIn(args.email, args.password);
+        const user = await Auth.signIn(args.input.email, args.input.password);
     
         return {
           token:  user.token,

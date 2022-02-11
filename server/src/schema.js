@@ -2,13 +2,34 @@ const typeDefs = `
   type Query {
     myTools: ToolListResponse
   }
-
+  
   type Mutation {
-      createTool(description: String!, category: ID!, quantity: Int!): ToolMutationResponse!
-      updateTool(id:ID!, description: String!, category: ID!, quantity: Int!): ToolMutationResponse!
+      createTool(input: CreateToolInput!): ToolMutationResponse!
+      updateTool(input: UpdateToolInput!): ToolMutationResponse!
       deleteTool(id: ID!): ToolMutationResponse!
-      signup(email: String!, password: String!, name: String!): SignUpResponse
-      login(email: String!, password: String!): LoginResponse
+      signup(input: SignupInput!): SignUpResponse
+      login(input: LoginInput!): LoginResponse
+  }
+  
+  input SignupInput {
+    email: String! @constraint(minLength: 5, maxLength: 50, format: "email")
+    password: String! @constraint(minLength: 6, maxLength: 20, pattern: "^[0-9a-zA-Z!@]*$")
+    name: String! @constraint(minLength: 5, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
+  }
+  input LoginInput {
+    email: String! @constraint(minLength: 5, maxLength: 50, format: "email")
+    password: String! @constraint(minLength: 6, maxLength: 20, pattern: "^[0-9a-zA-Z!@]*$")
+  }
+  input CreateToolInput{
+    description: String! @constraint(minLength: 3, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
+    category: ID!
+    quantity: Int! @constraint(min: 0)
+  }
+  input UpdateToolInput{
+    id:ID!
+    description: String! @constraint(minLength: 3, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
+    category: ID!
+    quantity: Int! @constraint(min: 0)
   }
 
   type Tool {
@@ -41,6 +62,8 @@ const typeDefs = `
 
 `
 
+
+
 module.exports = {
-    typeDefs
+  typeDefs
 }
