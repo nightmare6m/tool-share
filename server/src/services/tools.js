@@ -25,6 +25,7 @@ async function updateTool(userId, toolId, description, category, quantity){
     newTool.quantity=quantity;
 
     await Firestore.setDocument(userId, {tools:myTools});
+    return newTool;
 }
 async function deleteTool(userId, toolId){
     const myTools = await getMyTools(userId); 
