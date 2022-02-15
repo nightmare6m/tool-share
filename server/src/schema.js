@@ -14,7 +14,7 @@ const typeDefs = `
   input SignupInput {
     email: String! @constraint(minLength: 5, maxLength: 50, format: "email")
     password: String! @constraint(minLength: 6, maxLength: 20, pattern: "^[0-9a-zA-Z!@]*$")
-    name: String! @constraint(minLength: 5, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
+    name: String! @constraint(minLength: 2, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
   }
   input LoginInput {
     email: String! @constraint(minLength: 5, maxLength: 50, format: "email")

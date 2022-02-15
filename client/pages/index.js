@@ -1,8 +1,7 @@
 import Head from 'next/head'
 import Image from 'next/image'
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
 import {useQuery, gql} from '@apollo/client';
+import Router from 'next/router'
 import styles from '../styles/Home.module.css'
 
 const GET_MY_TOOLS = gql`
@@ -20,7 +19,18 @@ const GET_MY_TOOLS = gql`
 
 export default function Home() {
 
-  const {loading, error, data} = useQuery(GET_MY_TOOLS);
+  const token = typeof window !== "undefined" && localStorage.getItem('accessToken')?localStorage.getItem('accessToken'): "";
+  if(typeof window !== "undefined" && !token){
+    Router.push('/login')
+  }
+  
+  const {loading, error, data} = useQuery(GET_MY_TOOLS, {
+    context: {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    }
+});
   if(loading){
     return "loading";
   }
@@ -28,6 +38,8 @@ export default function Home() {
     return "error";
   }
   console.log(data);
+
+  
 
   return (
     <div className={styles.container}>
@@ -37,36 +49,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div>
-      <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Sign In
-            </Button>
-      </div>
+      
 
       
     </div>
