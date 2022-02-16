@@ -21,13 +21,13 @@ const typeDefs = `
     password: String! @constraint(minLength: 6, maxLength: 20, pattern: "^[0-9a-zA-Z!@]*$")
   }
   input CreateToolInput{
-    description: String! @constraint(minLength: 3, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
+    description: String! @constraint(minLength: 3, maxLength: 50)
     category: ID!
     quantity: Int! @constraint(min: 0)
   }
   input UpdateToolInput{
     id:ID!
-    description: String! @constraint(minLength: 3, maxLength: 50, pattern: "^[0-9a-zA-Z]*$")
+    description: String! @constraint(minLength: 3, maxLength: 50)
     category: ID!
     quantity: Int! @constraint(min: 0)
   }
