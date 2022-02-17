@@ -47,12 +47,7 @@ mutation deleteTool ($id: ID!){
   deleteTool(id: $id){
     message,
     errorCode,
-    tool {
-      id,
-      description,
-      category,
-      quantity
-    }
+    toolId
   }
 }
 `;
@@ -132,6 +127,25 @@ export default function Home() {
         headers: {
             "Authorization": "Bearer " + token
         }
+    },
+    update: (cache, {data}) => {
+      const myTools = cache.readQuery({
+        query: GET_MY_TOOLS
+      }).myTools;
+      const newTool ={
+        id: data.createTool.tool.id,
+        description: data.createTool.tool.description,
+        category: data.createTool.tool.category,
+        quantity: data.createTool.tool.quantity
+      }
+      cache.writeQuery({
+        query: GET_MY_TOOLS,
+        data: {myTools: {
+          tools: myTools.tools.concat([newTool]),
+          errorCode: null,
+          message: "" 
+        }}
+      });      
     }
   });
   const [deleteToolMutation, { deleteToolData, deleteToolLoading, deleteToolError }] = useMutation(DELETE_TOOL, {
@@ -139,6 +153,19 @@ export default function Home() {
         headers: {
             "Authorization": "Bearer " + token
         }
+    },
+    update: (cache, {data}) => {
+      const myTools = cache.readQuery({
+        query: GET_MY_TOOLS
+      }).myTools;
+      cache.writeQuery({
+        query: GET_MY_TOOLS,
+        data: {myTools: {
+          tools: myTools.tools.filter(tool => tool.id !== data.deleteTool.toolId),
+          errorCode: null,
+          message: "" 
+        }}
+      });      
     }
   });
   const {loading, error, data} = useQuery(GET_MY_TOOLS, {
@@ -166,8 +193,6 @@ export default function Home() {
         }
       }
     });
-
-    location && location.reload();
   }
   async function deleteTool(id){
     await deleteToolMutation({
@@ -175,8 +200,6 @@ export default function Home() {
         id
       }
     });
-
-    location && location.reload();
   }
 
   return (

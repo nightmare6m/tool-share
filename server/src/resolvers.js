@@ -49,7 +49,8 @@ const resolvers = {
         await ToolService.deleteTool(context.currentUser.user_id, args.id);
         return {
             errorCode: null,
-            message: "Tool Deleted"
+            message: "Tool Deleted",
+            toolId: args.id
         };
       }),
       signup: async (parent, args, context, info) => {

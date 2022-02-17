@@ -6,7 +6,7 @@ const typeDefs = `
   type Mutation {
       createTool(input: CreateToolInput!): ToolMutationResponse!
       updateTool(input: UpdateToolInput!): ToolMutationResponse!
-      deleteTool(id: ID!): ToolMutationResponse!
+      deleteTool(id: ID!): ToolDeleteResponse!
       signup(input: SignupInput!): SignUpResponse
       login(input: LoginInput!): LoginResponse
   }
@@ -48,6 +48,11 @@ const typeDefs = `
       message: String!,
       errorCode: Int
   }
+  type ToolDeleteResponse {
+    toolId: ID!,
+    message: String!,
+    errorCode: Int
+}
 
   type SignUpResponse {
     message: String!
