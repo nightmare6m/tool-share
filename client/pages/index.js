@@ -2,7 +2,7 @@ import Head from 'next/head'
 import Image from 'next/image'
 import {useQuery, gql, useMutation} from '@apollo/client';
 import Router from 'next/router'
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
@@ -12,6 +12,8 @@ import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
+import DialogTitle from '@mui/material/DialogTitle';
+import Dialog from '@mui/material/Dialog';
 import styles from '../styles/Home.module.css'
 
 const GET_MY_TOOLS = gql`
@@ -31,6 +33,20 @@ const GET_MY_TOOLS = gql`
 const CREATE_TOOL = gql`
 mutation createTool ($input: CreateToolInput!){
   createTool(input: $input){
+    message,
+    errorCode,
+    tool {
+      id,
+      description,
+      category,
+      quantity
+    }
+  }
+}
+`;
+const UPDATE_TOOL = gql`
+mutation updateTool ($input: UpdateToolInput!){
+  updateTool(input: $input){
     message,
     errorCode,
     tool {
@@ -62,6 +78,69 @@ const categories = [
     name: "Other"
   }
 ]
+
+function ToolUpdate(props){
+  const [toolCategory, setCategory] = useState("OTHER");
+  const [description, setDescription] = useState("");
+  const [quantity, setQuantity] = useState(0);
+
+  useEffect(() => {
+    setCategory(props.category);
+  }, [props.category]);
+  useEffect(() => {
+    setDescription(props.description);
+  }, [props.description]);
+  useEffect(() => {
+    setQuantity(props.quantity);
+  }, [props.quantity]);
+
+  return (
+    <Dialog onClose={()=>props.cancelUpdate()} open={true}>
+      <DialogTitle>Update Tool</DialogTitle>
+    <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Description"
+              autoFocus
+              value={description}
+              onChange={(e)=>setDescription(e.target.value)}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Quantity"
+              type="number"
+              value={quantity}
+              onChange={(e)=>setQuantity(e.target.value)}
+            />
+            <Select
+              value={toolCategory}
+              label="Category"
+              onChange={(e)=> setCategory(e.target.value)}
+            >{
+              categories.map(category => (
+                <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
+              ))
+            }
+        </Select>
+            <Button
+              onClick={()=>{
+                props.updateTool(props.id, description, toolCategory, quantity);
+                setDescription("");
+                setQuantity(0);
+                setCategory("OTHER");
+              }}
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Save
+            </Button>
+  </Dialog>);
+
+}
 
 function ToolCreate(props){
   const [toolCategory, setCategory] = useState("OTHER");
@@ -117,7 +196,7 @@ function ToolCreate(props){
 
 
 export default function Home() {
-
+  const [updateId, setUpdateId] = useState("");
   const token = typeof window !== "undefined" && localStorage.getItem('accessToken')?localStorage.getItem('accessToken'): "";
   if(typeof window !== "undefined" && !token){
     Router.push('/login')
@@ -146,6 +225,35 @@ export default function Home() {
           message: "" 
         }}
       });      
+    }
+  });
+  const [updateToolMutation, { updateToolData, updateToolLoading, updateToolError }] = useMutation(UPDATE_TOOL, {
+    context: {
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    },
+    update: (cache, {data}) => {
+      const myTools = cache.readQuery({
+        query: GET_MY_TOOLS
+      }).myTools.tools.slice();
+      const newTool ={
+        id: data.updateTool.tool.id,
+        description: data.updateTool.tool.description,
+        category: data.updateTool.tool.category,
+        quantity: data.updateTool.tool.quantity
+      }
+
+      myTools.splice(myTools.indexOf(myTools.find(tool => tool.id === newTool.id)), 1, newTool);
+      cache.writeQuery({
+        query: GET_MY_TOOLS,
+        data: {myTools: {
+          tools: myTools,
+          errorCode: null,
+          message: "" 
+        }}
+      });   
+      setUpdateId("");
     }
   });
   const [deleteToolMutation, { deleteToolData, deleteToolLoading, deleteToolError }] = useMutation(DELETE_TOOL, {
@@ -194,6 +302,18 @@ export default function Home() {
       }
     });
   }
+  async function updateTool(id, description, category, quantity){
+    await updateToolMutation({
+      variables: {
+        input: {
+          id,
+          description,
+          category,
+          quantity
+        }
+      }
+    });
+  }
   async function deleteTool(id){
     await deleteToolMutation({
       variables: {
@@ -202,6 +322,11 @@ export default function Home() {
     });
   }
 
+  const updatingTool = data.myTools.tools.find(tool => tool.id === updateId);
+  let updatingToolComponent = <span></span>;
+  if(updatingTool){
+    updatingToolComponent = <ToolUpdate id={updateId} description={updatingTool.description} category={updatingTool.category} quantity={updatingTool.quantity} cancelUpdate={()=> setUpdateId("")} updateTool={updateTool} />;
+  }
   return (
     <div className={styles.container}>
       <Head>
@@ -229,11 +354,12 @@ export default function Home() {
           </CardContent>
           <CardActions>
             <Button onClick={()=>deleteTool(tool.id)} size="small">Delete</Button>
+            <Button onClick={()=>setUpdateId(tool.id)} size="small">Edit</Button>
           </CardActions>
         </Card>
         ))}
       </div>
-      
+      {updatingToolComponent}
     </div>
   )
 }
