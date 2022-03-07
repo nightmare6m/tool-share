@@ -1,199 +1,13 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import {useQuery, gql, useMutation} from '@apollo/client';
+import {useQuery, useMutation} from '@apollo/client';
 import Router from 'next/router'
-import {useState, useEffect} from 'react';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
-import Typography from '@mui/material/Typography';
-import DialogTitle from '@mui/material/DialogTitle';
-import Dialog from '@mui/material/Dialog';
+import {useState} from 'react';
 import styles from '../styles/Home.module.css'
-
-const GET_MY_TOOLS = gql`
-{
-     myTools{
-         tools{
-          id,
-          description,
-          quantity,
-          category
-         }
-         message,
-         errorCode
-       }
-}
-`;
-const CREATE_TOOL = gql`
-mutation createTool ($input: CreateToolInput!){
-  createTool(input: $input){
-    message,
-    errorCode,
-    tool {
-      id,
-      description,
-      category,
-      quantity
-    }
-  }
-}
-`;
-const UPDATE_TOOL = gql`
-mutation updateTool ($input: UpdateToolInput!){
-  updateTool(input: $input){
-    message,
-    errorCode,
-    tool {
-      id,
-      description,
-      category,
-      quantity
-    }
-  }
-}
-`;
-const DELETE_TOOL = gql`
-mutation deleteTool ($id: ID!){
-  deleteTool(id: $id){
-    message,
-    errorCode,
-    toolId
-  }
-}
-`;
-
-const categories = [
-  {
-    id: "POWER",
-    name: "Power Tools"
-  },
-  {
-    id: "OTHER",
-    name: "Other"
-  }
-]
-
-function ToolUpdate(props){
-  const [toolCategory, setCategory] = useState("OTHER");
-  const [description, setDescription] = useState("");
-  const [quantity, setQuantity] = useState(0);
-
-  useEffect(() => {
-    setCategory(props.category);
-  }, [props.category]);
-  useEffect(() => {
-    setDescription(props.description);
-  }, [props.description]);
-  useEffect(() => {
-    setQuantity(props.quantity);
-  }, [props.quantity]);
-
-  return (
-    <Dialog onClose={()=>props.cancelUpdate()} open={true}>
-      <DialogTitle>Update Tool</DialogTitle>
-    <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Description"
-              autoFocus
-              value={description}
-              onChange={(e)=>setDescription(e.target.value)}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Quantity"
-              type="number"
-              value={quantity}
-              onChange={(e)=>setQuantity(e.target.value)}
-            />
-            <Select
-              value={toolCategory}
-              label="Category"
-              onChange={(e)=> setCategory(e.target.value)}
-            >{
-              categories.map(category => (
-                <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
-              ))
-            }
-        </Select>
-            <Button
-              onClick={()=>{
-                props.updateTool(props.id, description, toolCategory, quantity);
-                setDescription("");
-                setQuantity(0);
-                setCategory("OTHER");
-              }}
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Save
-            </Button>
-  </Dialog>);
-
-}
-
-function ToolCreate(props){
-  const [toolCategory, setCategory] = useState("OTHER");
-  const [description, setDescription] = useState("");
-  const [quantity, setQuantity] = useState(0);
-
-
-  return (<div>
-    <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Description"
-              autoFocus
-              value={description}
-              onChange={(e)=>setDescription(e.target.value)}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              label="Quantity"
-              type="number"
-              value={quantity}
-              onChange={(e)=>setQuantity(e.target.value)}
-            />
-            <Select
-              value={toolCategory}
-              label="Category"
-              onChange={(e)=> setCategory(e.target.value)}
-            >{
-              categories.map(category => (
-                <MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>
-              ))
-            }
-        </Select>
-            <Button
-              onClick={()=>{
-                props.createTool(description, toolCategory, quantity);
-                setDescription("");
-                setQuantity(0);
-                setCategory("OTHER");
-              }}
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Create Tool
-            </Button>
-  </div>);
-
-}
-
+import {GET_MY_TOOLS, CREATE_TOOL, UPDATE_TOOL, DELETE_TOOL} from 'features/tools/queries';
+import {CATEGORIES} from 'features/tools/constants';
+import { ToolCreate } from 'features/tools/components/ToolCreate';
+import { ToolUpdate } from 'features/tools/components/ToolUpdate';
+import { ToolCard } from 'features/tools/components/ToolCard';
 
 export default function Home() {
   const [updateId, setUpdateId] = useState("");
@@ -289,7 +103,7 @@ export default function Home() {
   if(error){
     return "error";
   }
-  console.log(data);
+
  
   async function createTool(description, category, quantity){
     await createToolMutation({
@@ -323,10 +137,8 @@ export default function Home() {
   }
 
   const updatingTool = data.myTools.tools.find(tool => tool.id === updateId);
-  let updatingToolComponent = <span></span>;
-  if(updatingTool){
-    updatingToolComponent = <ToolUpdate id={updateId} description={updatingTool.description} category={updatingTool.category} quantity={updatingTool.quantity} cancelUpdate={()=> setUpdateId("")} updateTool={updateTool} />;
-  }
+  const updatingToolComponent = updatingTool?(<ToolUpdate id={updateId} description={updatingTool.description} category={updatingTool.category} quantity={updatingTool.quantity} cancelUpdate={()=> setUpdateId("")} updateTool={updateTool} />):<span></span>;
+
   return (
     <div className={styles.container}>
       <Head>
@@ -340,23 +152,7 @@ export default function Home() {
       </div>
       <div>
         {data.myTools.tools.map(tool => (
-          <Card key={tool.id} sx={{ minWidth: 275 }}>
-          <CardContent>
-            <Typography variant="h5" component="div">
-              {tool.description}
-            </Typography>
-            <Typography sx={{ mb: 1.5 }} color="text.secondary">
-              {categories.find(category => category.id === tool.category).name}
-            </Typography>
-            <Typography variant="body2">
-              {tool.quantity}
-            </Typography>
-          </CardContent>
-          <CardActions>
-            <Button onClick={()=>deleteTool(tool.id)} size="small">Delete</Button>
-            <Button onClick={()=>setUpdateId(tool.id)} size="small">Edit</Button>
-          </CardActions>
-        </Card>
+          <ToolCard tool={tool} categories={CATEGORIES} setUpdateId={setUpdateId} deleteTool={deleteTool} />
         ))}
       </div>
       {updatingToolComponent}

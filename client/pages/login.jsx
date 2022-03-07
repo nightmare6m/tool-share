@@ -39,7 +39,6 @@ function Login() {
               name="email"
               autoComplete="email"
               autoFocus
-              name="email"
             />
             <TextField
               margin="normal"
@@ -50,7 +49,6 @@ function Login() {
               type="password"
               id="password"
               autoComplete="current-password"
-              name="password"
             />
             <Button
               type="submit"
