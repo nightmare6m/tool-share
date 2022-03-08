@@ -8,6 +8,7 @@ import {CATEGORIES} from 'features/tools/constants';
 import { ToolCreate } from 'features/tools/components/ToolCreate';
 import { ToolUpdate } from 'features/tools/components/ToolUpdate';
 import { ToolCard } from 'features/tools/components/ToolCard';
+import { UpdateToolCacheCreate, UpdateToolCacheEdit, UpdateToolCacheDelete } from 'features/tools/contextUpdates';
 
 export default function Home() {
   const [updateId, setUpdateId] = useState("");
@@ -21,25 +22,7 @@ export default function Home() {
             "Authorization": "Bearer " + token
         }
     },
-    update: (cache, {data}) => {
-      const myTools = cache.readQuery({
-        query: GET_MY_TOOLS
-      }).myTools;
-      const newTool ={
-        id: data.createTool.tool.id,
-        description: data.createTool.tool.description,
-        category: data.createTool.tool.category,
-        quantity: data.createTool.tool.quantity
-      }
-      cache.writeQuery({
-        query: GET_MY_TOOLS,
-        data: {myTools: {
-          tools: myTools.tools.concat([newTool]),
-          errorCode: null,
-          message: "" 
-        }}
-      });      
-    }
+    update: UpdateToolCacheCreate
   });
   const [updateToolMutation, { updateToolData, updateToolLoading, updateToolError }] = useMutation(UPDATE_TOOL, {
     context: {
@@ -47,28 +30,7 @@ export default function Home() {
             "Authorization": "Bearer " + token
         }
     },
-    update: (cache, {data}) => {
-      const myTools = cache.readQuery({
-        query: GET_MY_TOOLS
-      }).myTools.tools.slice();
-      const newTool ={
-        id: data.updateTool.tool.id,
-        description: data.updateTool.tool.description,
-        category: data.updateTool.tool.category,
-        quantity: data.updateTool.tool.quantity
-      }
-
-      myTools.splice(myTools.indexOf(myTools.find(tool => tool.id === newTool.id)), 1, newTool);
-      cache.writeQuery({
-        query: GET_MY_TOOLS,
-        data: {myTools: {
-          tools: myTools,
-          errorCode: null,
-          message: "" 
-        }}
-      });   
-      setUpdateId("");
-    }
+    update: UpdateToolCacheEdit
   });
   const [deleteToolMutation, { deleteToolData, deleteToolLoading, deleteToolError }] = useMutation(DELETE_TOOL, {
     context: {
@@ -76,19 +38,7 @@ export default function Home() {
             "Authorization": "Bearer " + token
         }
     },
-    update: (cache, {data}) => {
-      const myTools = cache.readQuery({
-        query: GET_MY_TOOLS
-      }).myTools;
-      cache.writeQuery({
-        query: GET_MY_TOOLS,
-        data: {myTools: {
-          tools: myTools.tools.filter(tool => tool.id !== data.deleteTool.toolId),
-          errorCode: null,
-          message: "" 
-        }}
-      });      
-    }
+    update: UpdateToolCacheDelete
   });
   const {loading, error, data} = useQuery(GET_MY_TOOLS, {
     context: {
@@ -127,6 +77,7 @@ export default function Home() {
         }
       }
     });
+    setUpdateId("");
   }
   async function deleteTool(id){
     await deleteToolMutation({
